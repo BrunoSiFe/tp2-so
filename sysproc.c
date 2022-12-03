@@ -89,3 +89,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_set_tickets(int tickets)
+{
+  return set_tickets(tickets);
+}
+
+void
+sys_yield(void)
+{
+  yield();
+}
