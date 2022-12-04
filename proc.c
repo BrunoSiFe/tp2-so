@@ -6,21 +6,40 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
-
 struct
 {
   struct spinlock lock;
   struct proc proc[NPROC];
 } ptable;
 
-int totalNumberTickets = 0;
 int timeSlice = INTERV;
 
+int totalRunTime = 0;
+int totalReadyTime = 0;
+int totalSleepingTime = 0;
 static struct proc *initproc;
 
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
+
+int totalNumberTickets(void)
+{
+  struct proc *p;
+  int ticket_aggregate = 0;
+
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state == RUNNABLE)
+    {
+      for (int i = 0; i < p->numberOfTickets; i++)
+      {
+        ticket_aggregate += p->tickets[i];
+      }
+    }
+  }
+  return ticket_aggregate;
+}
 
 static void wakeup1(void *chan);
 
@@ -93,10 +112,13 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->tickets[0] = totalNumberTickets;
+  p->tickets[0] = totalNumberTickets();
   p->indexLastTicket = 0;
   p->numberOfTickets = 1;
-  totalNumberTickets = totalNumberTickets + 1;
+  p->ctime = 0;
+  p->retime = 0;
+  p->rutime = 0;
+  p->stime = 0;
 
   release(&ptable.lock);
 
@@ -156,7 +178,6 @@ void userinit(void)
   // writes to be visible, and the lock is also needed
   // because the assignment might not be atomic.
   acquire(&ptable.lock);
-
   p->state = RUNNABLE;
 
   release(&ptable.lock);
@@ -193,7 +214,6 @@ int fork(void)
   int i, pid;
   struct proc *np;
   struct proc *curproc = myproc();
-
   // Allocate process.
   if ((np = allocproc()) == 0)
   {
@@ -275,7 +295,6 @@ void exit(void)
         wakeup1(initproc);
     }
   }
-
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
   sched();
@@ -351,6 +370,7 @@ int hasTicket(int tickets[], int selectedTicket)
   }
   return 0;
 }
+
 // PAGEBREAK: 42
 //  Per-CPU process scheduler.
 //  Each CPU calls scheduler() after setting itself up.
@@ -371,10 +391,20 @@ void scheduler(void)
     sti();
 
     // Loop over process table looking for process to run.
-    int selectedTicket = myRandInRange(0, totalNumberTickets);
+    int numberOfAssignedTickets = totalNumberTickets();
+    int selectedTicket = myRandInRange(0, numberOfAssignedTickets);
     acquire(&ptable.lock);
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
+      if (p->state == SLEEPING)
+        p->stime += 1;
+
+      if (p->state == RUNNABLE)
+        p->retime += 1;
+
+      if (p->state == RUNNING)
+        p->rutime += 1;
+
       if (p->state != RUNNABLE)
         continue;
 
@@ -440,7 +470,7 @@ void yield(void)
     acquire(&ptable.lock); // DOC: yieldlock
     myproc()->state = RUNNABLE;
     sched();
-    timeSlice=INTERV;
+    timeSlice = INTERV;
     release(&ptable.lock);
   }
 }
@@ -492,7 +522,6 @@ void sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
-
   sched();
 
   // Tidy up.
@@ -588,17 +617,43 @@ void procdump(void)
   }
 }
 
-int
-set_tickets(int tickets){
+int set_tickets(int tickets)
+{
   struct proc *p = myproc();
-  if(p->numberOfTickets+tickets > 10000)
+  if (p->numberOfTickets + tickets > 10000)
     return -1;
 
-  for(int i = p->indexLastTicket+1; i<p->indexLastTicket+tickets;i++ ){
-    p->tickets[i]=i;
+  for (int i = p->indexLastTicket + 1; i < p->indexLastTicket + tickets; i++)
+  {
+    p->tickets[i] = i;
   }
 
-  totalNumberTickets+=tickets;
+  return 0;
+}
+
+int wait2(int *retime, int *rutime, int *stime)
+{
+  totalReadyTime += myproc()->retime;
+  totalRunTime += myproc()->rutime;
+  totalSleepingTime += myproc()->stime;
+
+  cprintf("STIME: %d RUTIME: %d RETIME: %d \n", myproc()->stime, myproc()->rutime, myproc()->retime);
+  if (myproc()->pid == 3)
+  {
+    int ms = totalSleepingTime / 30;
+    int mru = totalRunTime / 30;
+    int mre = totalReadyTime / 30;
+    cprintf("MEDIA STIME: %d MEDIA RUTIME: %d MEDIA RETIME: %d \n", ms, mru, mre);
+  }
+
 
   return 0;
+}
+
+void print_total(int n)
+{
+  int ms = myproc()->totalSleepingTime / n;
+  int mru = myproc()->totalRunTime / n;
+  int mre = myproc()->totalRunTime / n;
+  cprintf("MEDIA STIME: %d MEDIA RUTIME: %d MEDIA RETIME: %d \n", ms, mru, mre);
 }

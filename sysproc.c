@@ -101,3 +101,15 @@ sys_yield(void)
 {
   yield();
 }
+
+void
+sys_wait2(int *retime, int *rutime, int *stime)
+{
+  wait2(retime, rutime, stime);
+}
+
+void
+sys_print_total(int n)
+{
+  print_total(n);
+}

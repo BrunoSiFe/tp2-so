@@ -52,6 +52,13 @@ struct proc {
   int tickets[10000];          // Tickets Assigned to the Process
   int indexLastTicket;        // Index of the last added Ticket
   int numberOfTickets;        // Number of Tickets currently assigned to the process
+  uint ctime;
+  int stime;
+  int retime;
+  int rutime;
+  int totalReadyTime;
+  int totalRunTime;
+  int totalSleepingTime;
 };
 
 // Process memory is laid out contiguously, low addresses first:

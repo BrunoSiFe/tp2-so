@@ -1,11 +1,68 @@
 #include "types.h"
 #include "user.h"
-int main(void)
+int main(int argc, char *argv[])
 {
-    if(!getpid())
-        fork();
-
-    for(int i=0;i<10000;i++){
-
+    for (int i = 0; i < 3 * 10; i++)
+    {
+        int pid = 0;
+        if (getpid() == 3)
+        {
+            fork();
+        }
+        if (getpid() == 3)
+        {
+            wait();
+        }
+        for (int j = 0; j <= 100; j++)
+        {
+            if (getpid() == 3)
+            {
+                wait();
+            }
+            else
+            {
+                if (pid % 3 == 0)
+                {
+                    set_tickets(50);
+                    for (int m = 0; m < 10000000; m++)
+                    {
+                    }
+                }
+                if (pid % 3 == 1)
+                {
+                    set_tickets(20);
+                    for (int m = 0; m < 1000; m++)
+                    {
+                    }
+                    yield();
+                }
+                if (pid % 3 == 2)
+                {
+                    set_tickets(30);
+                    sleep(1);
+                }
+            }
+        }
     }
+
+    int *retime = 0;
+    int *rutime = 0;
+    int *stime = 0;
+
+    if (getpid() % 3 == 0)
+    {
+        printf(1, "PID: %d CPU-BOUND\n", getpid());
+    }
+    if (getpid() % 3 == 1)
+    {
+        printf(1, "PID: %d S-BOUND\n", getpid());
+    }
+    if (getpid() % 3 == 2)
+    {
+        printf(1, "PID: %d IO-BOUND\n", getpid());
+    }
+
+    wait2(retime, rutime, stime);
+    
+    exit();
 }
