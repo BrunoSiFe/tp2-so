@@ -24,3 +24,4 @@
 #define SYS_yield  23
 #define SYS_wait2 24
 #define SYS_print_total 25
+#define SYS_set_total 26

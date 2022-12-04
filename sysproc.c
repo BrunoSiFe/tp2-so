@@ -91,8 +91,13 @@ sys_uptime(void)
 }
 
 int
-sys_set_tickets(int tickets)
+sys_set_tickets(void)
 {
+  int tickets;
+
+  if(argint(0, &tickets) < 0)
+    return -1;
+    
   return set_tickets(tickets);
 }
 
@@ -112,4 +117,16 @@ void
 sys_print_total(int n)
 {
   print_total(n);
+}
+
+
+int
+sys_set_total(void)
+{
+  int n;
+
+  if(argint(0, &n) < 0)
+    return -1;
+    
+  return set_total(n);
 }

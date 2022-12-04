@@ -17,6 +17,7 @@ int timeSlice = INTERV;
 int totalRunTime = 0;
 int totalReadyTime = 0;
 int totalSleepingTime = 0;
+int total = 0;
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -394,7 +395,7 @@ void scheduler(void)
     int numberOfAssignedTickets = totalNumberTickets();
     int selectedTicket = myRandInRange(0, numberOfAssignedTickets);
     acquire(&ptable.lock);
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
       if (p->state == SLEEPING)
         p->stime += 1;
@@ -404,7 +405,9 @@ void scheduler(void)
 
       if (p->state == RUNNING)
         p->rutime += 1;
-
+    }
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
       if (p->state != RUNNABLE)
         continue;
 
@@ -640,9 +643,9 @@ int wait2(int *retime, int *rutime, int *stime)
   cprintf("STIME: %d RUTIME: %d RETIME: %d \n", myproc()->stime, myproc()->rutime, myproc()->retime);
   if (myproc()->pid == 3)
   {
-    int ms = totalSleepingTime / 30;
-    int mru = totalRunTime / 30;
-    int mre = totalReadyTime / 30;
+    int ms = totalSleepingTime / total;
+    int mru = totalRunTime / total;
+    int mre = totalReadyTime / total;
     cprintf("MEDIA STIME: %d MEDIA RUTIME: %d MEDIA RETIME: %d \n", ms, mru, mre);
   }
 
@@ -656,4 +659,10 @@ void print_total(int n)
   int mru = myproc()->totalRunTime / n;
   int mre = myproc()->totalRunTime / n;
   cprintf("MEDIA STIME: %d MEDIA RUTIME: %d MEDIA RETIME: %d \n", ms, mru, mre);
+}
+
+int set_total(int n){
+  total = n;
+
+  return 0;
 }
