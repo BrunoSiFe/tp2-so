@@ -27,7 +27,7 @@ int set_tickets(int);
 int yield(void);
 int wait2(int*, int*, int*);
 int print_total(int);
-int set_total(int);
+int set_total(int, int, int);
 
 // ulib.c
 int stat(const char*, struct stat*);

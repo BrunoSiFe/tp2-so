@@ -14,10 +14,18 @@ struct
 
 int timeSlice = INTERV;
 
-int totalRunTime = 0;
-int totalReadyTime = 0;
-int totalSleepingTime = 0;
-int total = 0;
+int totalRunTimeIO = 0;
+int totalReadyTimeIO = 0;
+int totalSleepingTimeIO = 0;
+int totalRunTimeS = 0;
+int totalReadyTimeS = 0;
+int totalSleepingTimeS = 0;
+int totalRunTimeCPU = 0;
+int totalReadyTimeCPU = 0;
+int totalSleepingTimeCPU = 0;
+int totalIO = 0;
+int totalCPU = 0;
+int totalS = 0;
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -395,7 +403,7 @@ void scheduler(void)
     int numberOfAssignedTickets = totalNumberTickets();
     int selectedTicket = myRandInRange(0, numberOfAssignedTickets);
     acquire(&ptable.lock);
-        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
       if (p->state == SLEEPING)
         p->stime += 1;
@@ -636,19 +644,51 @@ int set_tickets(int tickets)
 
 int wait2(int *retime, int *rutime, int *stime)
 {
-  totalReadyTime += myproc()->retime;
-  totalRunTime += myproc()->rutime;
-  totalSleepingTime += myproc()->stime;
 
-  cprintf("STIME: %d RUTIME: %d RETIME: %d \n", myproc()->stime, myproc()->rutime, myproc()->retime);
-  if (myproc()->pid == 3)
+  if (myproc()->pid != 3)
   {
-    int ms = totalSleepingTime / total;
-    int mru = totalRunTime / total;
-    int mre = totalReadyTime / total;
-    cprintf("MEDIA STIME: %d MEDIA RUTIME: %d MEDIA RETIME: %d \n", ms, mru, mre);
+    if (myproc()->pid % 3 == 0)
+    {
+      totalCPU += 1;
+      totalReadyTimeCPU += myproc()->retime;
+      totalRunTimeCPU += myproc()->rutime;
+      totalSleepingTimeCPU += myproc()->stime;
+    }
+    if (myproc()->pid % 3 == 1)
+    {
+      totalS += 1;
+      totalReadyTimeS += myproc()->retime;
+      totalRunTimeS += myproc()->rutime;
+      totalSleepingTimeS += myproc()->stime;
+    }
+    if (myproc()->pid % 3 == 2)
+    {
+      totalIO += 1;
+      totalReadyTimeIO += myproc()->retime;
+      totalRunTimeIO += myproc()->rutime;
+      totalSleepingTimeIO += myproc()->stime;
+    }
   }
 
+  if (myproc()->pid != 3)
+    cprintf("STIME: %d RUTIME: %d RETIME: %d \n", myproc()->stime, myproc()->rutime, myproc()->retime);
+  if (myproc()->pid == 3)
+  {
+    int ms = totalSleepingTimeIO / totalIO;
+    int mru = totalRunTimeIO / totalIO;
+    int mre = totalReadyTimeIO / totalIO;
+    cprintf("IO:\nMEDIA STIME: %d MEDIA RUTIME: %d MEDIA RETIME: %d \n", ms, mru, mre);
+
+    ms = totalSleepingTimeCPU / totalCPU;
+    mru = totalRunTimeCPU / totalCPU;
+    mre = totalReadyTimeCPU / totalCPU;
+    cprintf("CPU:\nMEDIA STIME: %d MEDIA RUTIME: %d MEDIA RETIME: %d \n", ms, mru, mre);
+
+    ms = totalSleepingTimeS / totalS;
+    mru = totalRunTimeS / totalS;
+    mre = totalReadyTimeS / totalS;
+    cprintf("S-CPU:\nMEDIA STIME: %d MEDIA RUTIME: %d MEDIA RETIME: %d \n", ms, mru, mre);
+  }
 
   return 0;
 }
@@ -661,8 +701,12 @@ void print_total(int n)
   cprintf("MEDIA STIME: %d MEDIA RUTIME: %d MEDIA RETIME: %d \n", ms, mru, mre);
 }
 
-int set_total(int n){
-  total = n;
+int set_total(int n, int y, int z)
+{
+  cprintf("Total S: %d Total CPU: %d Total IO: %d \n", n, y, z);
+  totalS = y;
+  totalCPU = n;
+  totalIO = z;
 
   return 0;
 }
